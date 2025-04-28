@@ -1,6 +1,7 @@
-### 🗓️ Timeline
+# Roadmap
 
-#### ✅ **Weeks 1–6: Foundation**
+## **Weeks 1–6: Foundation**
+
 - [ ] User authentication
 - [ ] File/media handling
 - [ ] Database setup
@@ -11,7 +12,8 @@ These tasks establish the core infrastructure of the app.
 
 ---
 
-#### 🛠️ **Weeks 7–8: Feature Implementation**
+## **Weeks 7–8: Feature Implementation**
+
 - [ ] Camera interface
 - [ ] User tagging
 - [ ] Group system & membership
@@ -22,7 +24,8 @@ This phase focuses on building the essential interactive features that define th
 
 ---
 
-#### 🎨 **Weeks 9–10: Polish & Extras**
+## **Weeks 9–10: Polish & Extras**
+
 - [ ] Frontend design polish
 - [ ] Leaderboards
 - [ ] Usage statistics

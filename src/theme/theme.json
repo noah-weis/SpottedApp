@@ -1,0 +1,26 @@
+{
+  "colors": {
+    "TREE_GREEN": "#1c351c",
+    "SPIRIT_GREEN": "#276d37",
+    "FALL_YELLOW": "#c6d89a",
+    "SKY_BLUE": "#84c2e2",
+    "PAPER_YELLOW": "#d3efe8",
+    "dim1": "#B5D1CA",
+    "dim2": "#A1BDB6",
+    "dim3": "#8DA9A2",
+    "dim4": "#79958E"
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32
+  },
+  "borderRadius": {
+    "sm": 4,
+    "md": 8,
+    "lg": 16,
+    "full": 9999
+  }
+}

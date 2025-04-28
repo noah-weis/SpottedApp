@@ -1,14 +1,15 @@
 # Setup Guide
 
-### Prerequisites
+## Prerequisites
+
 - Node.js
 - npm or yarn
 - Expo CLI (`npm install -g expo-cli`)
 
-### Getting Started
+## Getting Started
 
 \`\`\`bash
-git clone <repo-url>
+git clone [repo-url]
 cd SpottedApp
 npm install    # or yarn
 expo start

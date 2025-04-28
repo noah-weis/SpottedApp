@@ -2,8 +2,10 @@
 
 **Spotted App** is a lightweight social mobile app designed for quick and fun interactions among friends.
 
-### Core Idea
+## Core
+
 Users can:
+
 - Open the app to a live camera view
 - Capture a photo or short video of someone they've spotted
 - Tag that person
@@ -11,7 +13,8 @@ Users can:
 
 This creates spontaneous, playful interactions while encouraging real-life social connection.
 
-### Key Features (MVP)
+## Key Features (MVP)
+
 - Camera-first interface
 - User tagging
 - Shared group feed
