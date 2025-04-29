@@ -1,32 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { screenStyles } from '../src/styles/onboard';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { screenStyles } from '../src/styles/onboardStyle';
 import { colors, spacing, borderRadius } from '../src/theme';
-import { PAPER_YELLOW } from '../src/theme/colors';
+import { useGoogleAuth } from '../src/services/auth';
 
 export default function SignInPage({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { signInWithGoogle } = useGoogleAuth();
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const userCredential = await signInWithGoogle();
+      console.log('Google sign-in success:', userCredential.user.email);
+      // Here you would typically navigate to your main app screen
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    }
+  };
 
   return (
     <View style={screenStyles.container}>
-      <View style={screenStyles.content}>
-        <View style={screenStyles.buttonContainer}>
-            <TouchableOpacity 
-            style={[screenStyles.button]}
-            onPress={() => console.log('Google selected')}
-            >
-            <Text style={screenStyles.buttonText}>Google</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-            style={[screenStyles.button]}
-            onPress={() => console.log('Auth selected')}
-            >
-            <Text style={[screenStyles.buttonText]}>Auth</Text>
-            </TouchableOpacity>
-        </View>
-      </View>
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
@@ -51,6 +45,17 @@ export default function SignInPage({ navigation }) {
         >
           <Text style={screenStyles.buttonText}>Sign In</Text>
         </TouchableOpacity>
+        
+        <View style={screenStyles.divider} />
+        
+        <View style={styles.alternativeSignIn}>
+          <TouchableOpacity 
+            style={[screenStyles.button]}
+            onPress={handleGoogleSignIn}
+          >
+            <Text style={screenStyles.buttonText}>Google</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -62,7 +67,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: spacing.lg,
         width: '100%',
-        paddingTop: spacing,
     },
     input: {
         color: colors.PAPER_YELLOW,
@@ -77,5 +81,10 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         borderRadius: borderRadius.md,
         alignItems: 'center',
+    },
+    alternativeSignIn: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
     },
 });

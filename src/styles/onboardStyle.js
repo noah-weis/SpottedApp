@@ -17,8 +17,8 @@ export const screenStyles = StyleSheet.create({
   title: {
     fontSize: 64,
     fontWeight: 'bold',
-    marginBottom: spacing.sm,
     color: colors.SKY_BLUE,
+    marginBottom: spacing.sm,
   },
   subtitle: {
     fontSize: 24,
@@ -28,20 +28,27 @@ export const screenStyles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    padding: spacing.lg,
+    justifyContent: 'space-between',
+    padding: spacing.sm,
   },
   button: {
     flex: 1,
     padding: spacing.md,
     borderRadius: borderRadius.md,
-    marginHorizontal: spacing.sm,
-    alignItems: 'center',
+    marginHorizontal: spacing.xs,
     backgroundColor: colors.SPIRIT_GREEN,
+    alignItems: 'center',
   },
   buttonText: {
     color: colors.FALL_YELLOW,
     fontSize: 24,
     fontWeight: '600',
+  },
+  divider: {
+    height: 3,
+    backgroundColor: colors.SKY_BLUE,
+    marginVertical: spacing.md,
+    width: '95%',
+    alignSelf: 'center',
   },
 });

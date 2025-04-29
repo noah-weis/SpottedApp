@@ -12,7 +12,7 @@
 git clone [repo-url]
 cd SpottedApp
 npm install    # or yarn
-expo start
+npm start
 \`\`\`
 
 Open in the browser, Android Studio, or Expo Go app.

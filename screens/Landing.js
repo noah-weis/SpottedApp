@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { screenStyles } from '../src/styles/onboard';
+import { screenStyles } from '../src/styles/onboardStyle';
 
 export default function LandingPage({ navigation }) {
   return (
