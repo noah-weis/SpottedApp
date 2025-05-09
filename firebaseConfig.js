@@ -4,7 +4,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA0CGg31QDhSxKFS-ydDJ1WYMbUQ5j8B9Q",
+  apiKey: "",
   authDomain: "spottedapp-f356f.firebaseapp.com",
   projectId: "spottedapp-f356f",
   storageBucket: "spottedapp-f356f.appspot.com",
