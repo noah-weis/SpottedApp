@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from 'reac
 import { screenStyles } from '../src/styles/onboardStyle';
 import { colors, spacing, borderRadius } from '../src/theme';
 import { useGoogleAuth } from '../src/services/auth';
+import LandingPage from './Landing';
 
 export default function SignInPage({ navigation }) {
   const [email, setEmail] = useState('');
@@ -11,11 +12,28 @@ export default function SignInPage({ navigation }) {
 
   const handleGoogleSignIn = async () => {
     try {
+      console.log('Attempting Google sign-in...');
       const userCredential = await signInWithGoogle();
-      console.log('Google sign-in success:', userCredential.user.email);
-      // Here you would typically navigate to your main app screen
+      if (userCredential && userCredential.user) {
+        console.log('Google sign-in success:', userCredential.user.email);
+        // Navigate to the main app or handle successful sign-in
+        // navigation.navigate('MainApp'); // Uncomment when you have a main app screen
+      } else {
+        Alert.alert('Sign In Failed', 'Google sign-in did not complete successfully.');
+      }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      console.error('Google sign-in error:', error);
+      let errorMessage = 'An unexpected error occurred during sign-in.';
+      
+      if (error.message.includes('dismissed')) {
+        errorMessage = 'Sign-in was cancelled.';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Google Sign-In Error', errorMessage);
     }
   };
 
@@ -55,6 +73,12 @@ export default function SignInPage({ navigation }) {
           >
             <Text style={screenStyles.buttonText}>Google</Text>
           </TouchableOpacity>
+        <TouchableOpacity 
+          style={[screenStyles.button]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={screenStyles.buttonText}>Back</Text>
+        </TouchableOpacity>
         </View>
       </View>
     </View>

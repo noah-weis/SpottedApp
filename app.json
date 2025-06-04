@@ -19,7 +19,9 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
+    "scheme": "com.nweis.spotted",
     "android": {
+      "package": "com.nweis.spotted",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
