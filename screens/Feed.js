@@ -169,16 +169,6 @@ export default function FeedScreen({ navigation }) {
               </View>
               
               <View style={styles.actionsSection}>
-                <TouchableOpacity
-                  style={[styles.actionButton, isLikedByCurrentUser && styles.likedButton]}
-                  onPress={() => handleLike(item.id)}
-                >
-                  <Text style={[styles.actionIcon, isLikedByCurrentUser && styles.likedIcon]}>
-                    {isLikedByCurrentUser ? '♥' : '♡'}
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.likeCount}>{likeCount}</Text>
-                
                 {isCurrentUser && (
                   <TouchableOpacity
                     style={[styles.actionButton, styles.deleteButton]}
@@ -187,6 +177,17 @@ export default function FeedScreen({ navigation }) {
                     <Text style={styles.deleteIcon}>🗑</Text>
                   </TouchableOpacity>
                 )}
+                
+                <TouchableOpacity
+                  style={[styles.actionButton, isLikedByCurrentUser && styles.likedButton]}
+                  onPress={() => handleLike(item.id)}
+                >
+                  <Text style={[styles.actionIcon, isLikedByCurrentUser && styles.likedIcon]}>
+                    {isLikedByCurrentUser ? '♥' : '♡'}
+                  </Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.likeCount}>{likeCount}</Text>
               </View>
             </View>
           </BlurView>
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   actionsSection: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
