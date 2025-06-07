@@ -1,5 +1,13 @@
 # Spotted
 
-Its basically a snapchat core but customized to this niche tag game I had with my friends.
+## Setup
 
-/docs/ has all the info.
+```shell
+npm install
+```
+
+## Run
+
+```shell
+npm run
+```
