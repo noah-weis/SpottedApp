@@ -21,7 +21,7 @@ export default function LandingPage({ navigation }) {
 
         <TouchableOpacity 
           style={[screenStyles.button]}
-          onPress={() => console.log('Sign up')}
+          onPress={() => navigation.navigate('SignUp')}
         >
           <Text style={screenStyles.buttonText}>Sign Up</Text>
         </TouchableOpacity>

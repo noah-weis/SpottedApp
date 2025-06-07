@@ -2,21 +2,36 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { screenStyles } from '../src/styles/onboardStyle';
 import { colors, spacing, borderRadius } from '../src/theme';
-import { useGoogleAuth } from '../src/services/auth';
+import { authService } from '../src/services/auth';
 
 export default function SignInPage({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signInWithGoogle } = useGoogleAuth();
+  const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const userCredential = await signInWithGoogle();
-      console.log('Google sign-in success:', userCredential.user.email);
-      // Here you would typically navigate to your main app screen
-    } catch (error) {
-      Alert.alert('Error', error.message);
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
     }
+
+    setLoading(true);
+    const result = await authService.signIn(email, password);
+    setLoading(false);
+
+    if (result.success) {
+      // Navigate to home screen on successful sign in
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+    } else {
+      Alert.alert('Sign In Failed', result.error);
+    }
+  };
+
+  const goToSignUp = () => {
+    navigation.navigate('SignUp');
   };
 
   return (
@@ -39,23 +54,25 @@ export default function SignInPage({ navigation }) {
           onChangeText={setPassword}
           secureTextEntry
         />
+        <View style={screenStyles.divider} />
         <TouchableOpacity 
-          style={styles.signInButton}
-          onPress={() => console.log('Sign in attempt', { email, password })}
+          style={[styles.signInButton, loading && styles.buttonDisabled]}
+          onPress={handleSignIn}
+          disabled={loading}
         >
-          <Text style={screenStyles.buttonText}>Sign In</Text>
+          <Text style={screenStyles.buttonText}>
+            {loading ? 'Signing In...' : 'Sign In'}
+          </Text>
         </TouchableOpacity>
         
-        <View style={screenStyles.divider} />
-        
-        <View style={styles.alternativeSignIn}>
-          <TouchableOpacity 
-            style={[screenStyles.button]}
-            onPress={handleGoogleSignIn}
-          >
-            <Text style={screenStyles.buttonText}>Google</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.signUpLink}
+          onPress={goToSignUp}
+        >
+          <Text style={styles.linkText}>
+            Don't have an account? Sign Up
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -81,6 +98,18 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         borderRadius: borderRadius.md,
         alignItems: 'center',
+    },
+    buttonDisabled: {
+        opacity: 0.6,
+    },
+    signUpLink: {
+        marginTop: spacing.md,
+        alignItems: 'center',
+    },
+    linkText: {
+        color: colors.SKY_BLUE,
+        fontSize: 16,
+        textDecorationLine: 'underline',
     },
     alternativeSignIn: {
         flexDirection: 'row',
