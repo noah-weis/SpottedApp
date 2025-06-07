@@ -7,6 +7,7 @@ import SignInPage from './screens/SignIn';
 import SignUpPage from './screens/SignUp';
 import HomeScreen from './screens/Home';
 import CameraScreen from './screens/Camera';
+import FeedScreen from './screens/Feed';
 import { authService } from './src/services/auth';
 
 const Stack = createStackNavigator();
@@ -38,6 +39,7 @@ export default function App() {
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Camera" component={CameraScreen} />
+            <Stack.Screen name="Feed" component={FeedScreen} />
           </>
         ) : (
           // User is not signed in

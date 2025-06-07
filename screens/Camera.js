@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, spacing } from '../src/theme';
+import { feedService } from '../src/services/feed';
+import { authService } from '../src/services/auth';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -37,11 +39,42 @@ export default function CameraScreen({ navigation }) {
           base64: false,
         });
         
-        // For now, just show an alert with the photo URI
-        // In a real app, you'd save this or navigate to an editing screen
-        Alert.alert('Photo Taken!', `Photo saved to: ${photo.uri}`, [
-          { text: 'OK', onPress: () => console.log('Photo URI:', photo.uri) }
-        ]);
+        // Get current user info
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser) {
+          Alert.alert('Error', 'You must be signed in to take photos');
+          return;
+        }
+
+        // Create photo data object for feed
+        const photoData = {
+          uri: photo.uri,
+          userId: currentUser.id,
+          userEmail: currentUser.email,
+          tags: [] // Future: tagged users
+        };
+
+        // Save photo to feed
+        const result = await feedService.addPhoto(photoData);
+        
+        if (result.success) {
+          Alert.alert(
+            'Photo Saved!', 
+            'Your photo has been added to the feed.',
+            [
+              { 
+                text: 'View Feed', 
+                onPress: () => navigation.navigate('Feed') 
+              },
+              { 
+                text: 'Take Another', 
+                style: 'cancel' 
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Error', 'Failed to save photo to feed');
+        }
       } catch (error) {
         console.error('Error taking picture:', error);
         Alert.alert('Error', 'Failed to take picture');
@@ -88,29 +121,29 @@ export default function CameraScreen({ navigation }) {
         style={styles.camera} 
         facing={facing}
         ref={cameraRef}
-      >
-        {/* Top Bar with Back Button */}
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backButtonTop} onPress={handleBack}>
-            <Text style={styles.backButtonText}>✕</Text>
+      />
+      
+      {/* Top Bar with Back Button */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backButtonTop} onPress={handleBack}>
+          <Text style={styles.backButtonText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Bottom Controls */}
+      <View style={styles.bottomControls}>
+        <View style={styles.controlsContainer}>
+          {/* Take Picture Button */}
+          <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+            <View style={styles.captureButtonInner} />
+          </TouchableOpacity>
+          
+          {/* Flip Camera Button */}
+          <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
+            <Text style={styles.flipButtonText}>🔄</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Bottom Controls */}
-        <View style={styles.bottomControls}>
-          <View style={styles.controlsContainer}>
-            {/* Take Picture Button */}
-            <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-              <View style={styles.captureButtonInner} />
-            </TouchableOpacity>
-            
-            {/* Flip Camera Button */}
-            <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
-              <Text style={styles.flipButtonText}>🔄</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </CameraView>
+      </View>
     </View>
   );
 }

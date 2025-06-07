@@ -64,7 +64,7 @@ export const authService = {
   // Create new account
   signUp: async (email, password) => {
     try {
-      // Check if user already exists
+        // Check if user already exists
       const existingUser = usersData.users.find(u => u.email === email);
       
       if (existingUser) {

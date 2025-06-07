@@ -19,13 +19,7 @@ export default function SignInPage({ navigation }) {
     const result = await authService.signIn(email, password);
     setLoading(false);
 
-    if (result.success) {
-      // Navigate to home screen on successful sign in
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      });
-    } else {
+    if (!result.success) {
       Alert.alert('Sign In Failed', result.error);
     }
   };

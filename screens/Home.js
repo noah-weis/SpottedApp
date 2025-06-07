@@ -7,14 +7,10 @@ import { authService } from '../src/services/auth';
 export default function HomeScreen({ navigation }) {
   const handleSignOut = async () => {
     const result = await authService.signOut();
-    if (result.success) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Landing' }],
-      });
-    } else {
+    if (!result.success) {
       Alert.alert('Error', 'Failed to sign out');
     }
+    // Don't manually navigate - let App.js auth state listener handle it
   };
 
   const currentUser = authService.getCurrentUser();
@@ -36,6 +32,12 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Camera')}
         >
           <Text style={screenStyles.buttonText}>Camera</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={() => navigation.navigate('Feed')}
+        >
+          <Text style={screenStyles.buttonText}>Feed</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.button}
