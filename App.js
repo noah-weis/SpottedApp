@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import LandingPage from './screens/Landing';
 import SignInPage from './screens/SignIn';
 import SignUpPage from './screens/SignUp';
-import HomeScreen from './screens/Home';
+
 import CameraScreen from './screens/Camera';
 import FeedScreen from './screens/Feed';
 import { authService } from './src/services/auth';
@@ -39,9 +39,8 @@ export default function App() {
           {user ? (
             // User is signed in
             <>
-              <Stack.Screen name="Home" component={HomeScreen} />
-              <Stack.Screen name="Camera" component={CameraScreen} />
               <Stack.Screen name="Feed" component={FeedScreen} />
+              <Stack.Screen name="Camera" component={CameraScreen} />
             </>
           ) : (
             // User is not signed in

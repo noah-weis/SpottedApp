@@ -9,6 +9,7 @@ import {
   Text,
   Alert,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,6 +26,7 @@ export default function FeedScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
   
   const flatListRef = useRef(null);
 
@@ -61,13 +63,9 @@ export default function FeedScreen({ navigation }) {
 
   const handleLike = async (photoId) => {
     try {
-      await feedService.toggleLike(photoId);
-      // Update local state
-      setPhotos(prevPhotos =>
-        prevPhotos.map(photo =>
-          photo.id === photoId ? { ...photo, liked: !photo.liked } : photo
-        )
-      );
+      await feedService.toggleLike(photoId, currentUser?.username);
+      // Reload photos to get updated like counts
+      await loadPhotos();
     } catch (error) {
       console.error('Error toggling like:', error);
       Alert.alert('Error', 'Failed to update like');
@@ -107,6 +105,15 @@ export default function FeedScreen({ navigation }) {
     navigation.navigate('Camera');
   };
 
+  const handleSignOut = async () => {
+    const result = await authService.signOut();
+    if (!result.success) {
+      Alert.alert('Error', 'Failed to sign out');
+    }
+    setShowSignOutModal(false);
+    // Don't manually navigate - let App.js auth state listener handle it
+  };
+
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -136,6 +143,8 @@ export default function FeedScreen({ navigation }) {
 
   const renderPhoto = ({ item, index }) => {
     const isCurrentUser = item.userUsername === currentUser?.username;
+    const isLikedByCurrentUser = item.likedBy ? item.likedBy.includes(currentUser?.username) : false;
+    const likeCount = item.likeCount || 0;
     
     return (
       <View style={styles.photoContainer}>
@@ -161,13 +170,14 @@ export default function FeedScreen({ navigation }) {
               
               <View style={styles.actionsSection}>
                 <TouchableOpacity
-                  style={[styles.actionButton, item.liked && styles.likedButton]}
+                  style={[styles.actionButton, isLikedByCurrentUser && styles.likedButton]}
                   onPress={() => handleLike(item.id)}
                 >
-                  <Text style={[styles.actionIcon, item.liked && styles.likedIcon]}>
-                    {item.liked ? '♥' : '♡'}
+                  <Text style={[styles.actionIcon, isLikedByCurrentUser && styles.likedIcon]}>
+                    {isLikedByCurrentUser ? '♥' : '♡'}
                   </Text>
                 </TouchableOpacity>
+                <Text style={styles.likeCount}>{likeCount}</Text>
                 
                 {isCurrentUser && (
                   <TouchableOpacity
@@ -237,10 +247,54 @@ export default function FeedScreen({ navigation }) {
         })}
       />
       
-      {/* Floating Plus Button */}
-      <TouchableOpacity style={styles.addButton} onPress={navigateToCamera}>
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
+      {/* Top Navigation */}
+      <View style={styles.topNav}>
+        {/* Profile Button */}
+        <TouchableOpacity 
+          style={styles.profileButton} 
+          onPress={() => setShowSignOutModal(true)}
+        >
+          <Text style={styles.profileIcon}>👤</Text>
+        </TouchableOpacity>
+        
+        {/* Plus Button */}
+        <TouchableOpacity style={styles.addButtonTop} onPress={navigateToCamera}>
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Sign Out Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showSignOutModal}
+        onRequestClose={() => setShowSignOutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView style={styles.modalBlurView} intensity={100} tint="dark">
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Sign Out</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to sign out?
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setShowSignOutModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.signOutButton]}
+                  onPress={handleSignOut}
+                >
+                  <Text style={styles.signOutButtonText}>Sign Out</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BlurView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -332,7 +386,7 @@ const styles = StyleSheet.create({
   actionsSection: {
     flexDirection: 'column',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   actionButton: {
     width: 44,
@@ -358,26 +412,116 @@ const styles = StyleSheet.create({
   deleteIcon: {
     fontSize: 18,
   },
-  addButton: {
+  likeCount: {
+    fontSize: 14,
+    color: colors.PAPER_YELLOW,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: -spacing.xs,
+  },
+  topNav: {
     position: 'absolute',
-    bottom: 100,
-    right: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    top: 60,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    zIndex: 1000,
+  },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  profileIcon: {
+    fontSize: 20,
+    color: colors.PAPER_YELLOW,
+  },
+  addButtonTop: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.SPIRIT_GREEN,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 4,
   },
   addButtonText: {
-    fontSize: 24,
+    fontSize: 20,
     color: colors.PAPER_YELLOW,
     fontWeight: 'bold',
+    lineHeight: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBlurView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalContent: {
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: spacing.xl,
+    borderRadius: 20,
+    alignItems: 'center',
+    minWidth: 280,
+    marginHorizontal: spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.PAPER_YELLOW,
+    marginBottom: spacing.md,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: colors.SKY_BLUE,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
     lineHeight: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  modalButton: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 25,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  signOutButton: {
+    backgroundColor: colors.SPIRIT_GREEN,
+  },
+  cancelButtonText: {
+    color: colors.PAPER_YELLOW,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  signOutButtonText: {
+    color: colors.PAPER_YELLOW,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

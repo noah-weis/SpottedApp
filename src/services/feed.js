@@ -28,7 +28,9 @@ export const feedService = {
         id: Date.now().toString(),
         ...photoData,
         timestamp: new Date().toISOString(),
-        liked: false
+        liked: false,
+        likeCount: 0,
+        likedBy: []
       };
       
       const updatedPhotos = [newPhoto, ...existingPhotos];
@@ -54,12 +56,35 @@ export const feedService = {
   },
 
   // Toggle like status
-  toggleLike: async (photoId) => {
+  toggleLike: async (photoId, currentUsername) => {
     try {
       const existingPhotos = await feedService.getAllPhotos();
-      const updatedPhotos = existingPhotos.map(photo => 
-        photo.id === photoId ? { ...photo, liked: !photo.liked } : photo
-      );
+      const updatedPhotos = existingPhotos.map(photo => {
+        if (photo.id === photoId) {
+          // Ensure likedBy and likeCount exist for backwards compatibility
+          const likedBy = photo.likedBy || [];
+          const isCurrentlyLiked = likedBy.includes(currentUsername);
+          
+          if (isCurrentlyLiked) {
+            // Remove like
+            return {
+              ...photo,
+              liked: false,
+              likeCount: Math.max(0, (photo.likeCount || 0) - 1),
+              likedBy: likedBy.filter(user => user !== currentUsername)
+            };
+          } else {
+            // Add like
+            return {
+              ...photo,
+              liked: true,
+              likeCount: (photo.likeCount || 0) + 1,
+              likedBy: [...likedBy, currentUsername]
+            };
+          }
+        }
+        return photo;
+      });
       await AsyncStorage.setItem(PHOTOS_STORAGE_KEY, JSON.stringify(updatedPhotos));
       return { success: true };
     } catch (error) {
@@ -67,10 +92,4 @@ export const feedService = {
       return { success: false, error: error.message };
     }
   },
-  
-  // Subscribe to photo updates
-  subscribeToPhotos: (callback) => {
-    // Return unsubscribe function
-    return () => {};
-  }
 };
