@@ -122,27 +122,13 @@ export default function FeedScreen({ navigation }) {
       const shouldGoToPrevious = event.translationY > SCREEN_HEIGHT * 0.2 && event.velocityY > 500;
       
       if (shouldGoToNext) {
-        // Animate to complete the upward scroll
-        translateY.value = withTiming(-SCREEN_HEIGHT, {
-          duration: 200,
-        }, (finished) => {
-          if (finished) {
-            runOnJS(navigateToPhoto)(1);
-            // Reset translateY after the photo change
-            translateY.value = 0;
-          }
-        });
+        // Change photo first, then animate
+        runOnJS(navigateToPhoto)(1);
+        translateY.value = withTiming(0, { duration: 150 });
       } else if (shouldGoToPrevious) {
-        // Animate to complete the downward scroll
-        translateY.value = withTiming(SCREEN_HEIGHT, {
-          duration: 200,
-        }, (finished) => {
-          if (finished) {
-            runOnJS(navigateToPhoto)(-1);
-            // Reset translateY after the photo change
-            translateY.value = 0;
-          }
-        });
+        // Change photo first, then animate
+        runOnJS(navigateToPhoto)(-1);
+        translateY.value = withTiming(0, { duration: 150 });
       } else {
         translateY.value = withSpring(0);
       }
