@@ -199,7 +199,7 @@ export default function CameraScreen({ navigation }) {
             
             {/* Flip Camera Button */}
             <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
-              <Text style={styles.flipButtonText}>🔄</Text>
+              <Text style={styles.flipButtonText}>flip</Text>
             </TouchableOpacity>
           </View>
         </BlurView>

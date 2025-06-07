@@ -27,6 +27,8 @@ export default function FeedScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState(null);
   
   const flatListRef = useRef(null);
 
@@ -79,26 +81,23 @@ export default function FeedScreen({ navigation }) {
       return;
     }
 
-    Alert.alert(
-      'Delete Photo',
-      'Are you sure you want to delete this photo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await feedService.deletePhoto(photoId);
-              setPhotos(prevPhotos => prevPhotos.filter(p => p.id !== photoId));
-            } catch (error) {
-              console.error('Error deleting photo:', error);
-              Alert.alert('Error', 'Failed to delete photo');
-            }
-          },
-        },
-      ]
-    );
+    setPhotoToDelete(photoId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!photoToDelete) return;
+    
+    try {
+      await feedService.deletePhoto(photoToDelete);
+      setPhotos(prevPhotos => prevPhotos.filter(p => p.id !== photoToDelete));
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      Alert.alert('Error', 'Failed to delete photo');
+    }
+    
+    setShowDeleteModal(false);
+    setPhotoToDelete(null);
   };
 
   const navigateToCamera = () => {
@@ -174,7 +173,7 @@ export default function FeedScreen({ navigation }) {
                     style={[styles.actionButton, styles.deleteButton]}
                     onPress={() => handleDelete(item.id)}
                   >
-                    <Text style={styles.deleteIcon}>🗑</Text>
+                    <Text style={styles.deleteIcon}>×</Text>
                   </TouchableOpacity>
                 )}
                 
@@ -296,6 +295,39 @@ export default function FeedScreen({ navigation }) {
           </BlurView>
         </View>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showDeleteModal}
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView style={styles.modalBlurView} intensity={100} tint="dark">
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Delete Photo</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to delete this photo? This action cannot be undone.
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setShowDeleteModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.deleteModalButton]}
+                  onPress={confirmDelete}
+                >
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BlurView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -411,7 +443,11 @@ const styles = StyleSheet.create({
     color: colors.TREE_GREEN,
   },
   deleteIcon: {
-    fontSize: 18,
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#ff4444',
+    lineHeight: 40,
+    textAlign: 'center',
   },
   likeCount: {
     fontSize: 14,
@@ -485,6 +521,10 @@ const styles = StyleSheet.create({
     minWidth: 280,
     marginHorizontal: spacing.lg,
   },
+  deleteModalIcon: {
+    fontSize: 48,
+    marginBottom: spacing.md,
+  },
   modalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -515,12 +555,20 @@ const styles = StyleSheet.create({
   signOutButton: {
     backgroundColor: colors.SPIRIT_GREEN,
   },
+  deleteModalButton: {
+    backgroundColor: colors.SPIRIT_GREEN,
+  },
   cancelButtonText: {
     color: colors.PAPER_YELLOW,
     fontSize: 16,
     fontWeight: '600',
   },
   signOutButtonText: {
+    color: colors.PAPER_YELLOW,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  deleteButtonText: {
     color: colors.PAPER_YELLOW,
     fontSize: 16,
     fontWeight: 'bold',
