@@ -37,24 +37,24 @@ const saveCurrentUser = async (user) => {
 loadCurrentUser();
 
 export const authService = {
-  // Sign in with email and password
-  signIn: async (email, password) => {
+  // Sign in with username and password
+  signIn: async (username, password) => {
     try {
       // Find user in JSON data
-      const user = usersData.users.find(u => u.email === email && u.password === password);
+      const user = usersData.users.find(u => u.username === username && u.password === password);
       
       if (user) {
         // Create user object without password
         const userWithoutPassword = {
           id: user.id,
-          email: user.email,
+          username: user.username,
           createdAt: user.createdAt
         };
         
         await saveCurrentUser(userWithoutPassword);
         return { success: true, user: userWithoutPassword };
       } else {
-        return { success: false, error: 'Invalid email or password' };
+        return { success: false, error: 'Invalid username or password' };
       }
     } catch (error) {
       return { success: false, error: error.message };
@@ -62,19 +62,19 @@ export const authService = {
   },
 
   // Create new account
-  signUp: async (email, password) => {
+  signUp: async (username, password) => {
     try {
         // Check if user already exists
-      const existingUser = usersData.users.find(u => u.email === email);
+      const existingUser = usersData.users.find(u => u.username === username);
       
       if (existingUser) {
-        return { success: false, error: 'Email already exists' };
+        return { success: false, error: 'Username already exists' };
       }
       
       // Create new user
       const newUser = {
         id: (usersData.users.length + 1).toString(),
-        email: email,
+        username: username,
         password: password,
         createdAt: new Date().toISOString()
       };
@@ -85,7 +85,7 @@ export const authService = {
       // Create user object without password
       const userWithoutPassword = {
         id: newUser.id,
-        email: newUser.email,
+        username: newUser.username,
         createdAt: newUser.createdAt
       };
       

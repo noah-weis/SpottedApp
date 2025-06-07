@@ -20,7 +20,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.content}>
         <Text style={screenStyles.title}>Welcome!</Text>
         <Text style={styles.userInfo}>
-          Signed in as: {currentUser?.email || 'Unknown'}
+          Signed in as: {currentUser?.username || 'Unknown'}
         </Text>
         <Text style={screenStyles.subtitle}>
           You're now signed in
@@ -62,24 +62,6 @@ const styles = StyleSheet.create({
     color: colors.PAPER_YELLOW,
     marginBottom: spacing.md,
     textAlign: 'center',
-  },
-  infoText: {
-    fontSize: 16,
-    color: colors.PAPER_YELLOW,
-    textAlign: 'center',
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-    lineHeight: 22,
-  },
-  featureList: {
-    alignItems: 'flex-start',
-    marginTop: spacing.md,
-  },
-  featureItem: {
-    fontSize: 16,
-    color: colors.SKY_BLUE,
-    marginVertical: spacing.xs,
-    lineHeight: 22,
   },
   buttonContainer: {
     padding: spacing.lg,

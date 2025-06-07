@@ -50,7 +50,7 @@ export default function CameraScreen({ navigation }) {
         const photoData = {
           uri: photo.uri,
           userId: currentUser.id,
-          userEmail: currentUser.email,
+          userUsername: currentUser.username,
           tags: [] // Future: tagged users
         };
 

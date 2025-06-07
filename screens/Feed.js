@@ -1,76 +1,86 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  Alert, 
-  SafeAreaView, 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  FlatList,
+  Dimensions,
+  StyleSheet,
+  StatusBar,
   TouchableOpacity,
   Text,
-  Dimensions,
-  StatusBar
+  Alert,
+  RefreshControl,
 } from 'react-native';
-import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  useAnimatedGestureHandler,
-  withSpring,
-  withTiming,
-  runOnJS,
-  interpolate,
-  clamp,
-} from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing } from '../src/theme';
 import { feedService } from '../src/services/feed';
 import { authService } from '../src/services/auth';
 import PhotoViewer from '../src/components/PhotoViewer';
-import PhotoOverlay from '../src/components/PhotoOverlay';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function FeedScreen({ navigation }) {
   const [photos, setPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showOverlay, setShowOverlay] = useState(false);
-  const [showHints, setShowHints] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   
-  const translateY = useSharedValue(0);
-  const gestureRef = useRef();
-  const hintTimerRef = useRef();
-  
-  const currentUser = authService.getCurrentUser();
+  const flatListRef = useRef(null);
 
-  const loadPhotos = useCallback(async () => {
+  // Load photos on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      loadPhotos();
+      loadCurrentUser();
+    }, [])
+  );
+
+  const loadCurrentUser = async () => {
+    const user = authService.getCurrentUser();
+    setCurrentUser(user);
+  };
+
+  const loadPhotos = async () => {
     try {
-      const allPhotos = await feedService.getAllPhotos();
-      setPhotos(allPhotos);
+      const photosData = await feedService.getAllPhotos();
+      setPhotos(photosData);
     } catch (error) {
       console.error('Error loading photos:', error);
       Alert.alert('Error', 'Failed to load photos');
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const handleLike = useCallback(async (photoId) => {
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadPhotos();
+    setRefreshing(false);
+  };
+
+  const handleLike = async (photoId) => {
     try {
-      const result = await feedService.toggleLike(photoId);
-      if (result.success) {
-        // Update local state optimistically
-        setPhotos(prev => prev.map(photo => 
+      await feedService.toggleLike(photoId);
+      // Update local state
+      setPhotos(prevPhotos =>
+        prevPhotos.map(photo =>
           photo.id === photoId ? { ...photo, liked: !photo.liked } : photo
-        ));
-      } else {
-        Alert.alert('Error', 'Failed to update like status');
-      }
+        )
+      );
     } catch (error) {
       console.error('Error toggling like:', error);
-      Alert.alert('Error', 'Failed to update like status');
+      Alert.alert('Error', 'Failed to update like');
     }
-  }, []);
+  };
 
-  const handleDelete = useCallback(async (photoId) => {
+  const handleDelete = async (photoId) => {
+    const photo = photos.find(p => p.id === photoId);
+    if (photo?.userUsername !== currentUser?.username) {
+      Alert.alert('Error', 'You can only delete your own photos');
+      return;
+    }
+
     Alert.alert(
       'Delete Photo',
       'Are you sure you want to delete this photo?',
@@ -80,273 +90,182 @@ export default function FeedScreen({ navigation }) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const result = await feedService.deletePhoto(photoId);
-            if (result.success) {
-              const updatedPhotos = photos.filter(photo => photo.id !== photoId);
-              setPhotos(updatedPhotos);
-              
-              // Adjust current index if needed
-              if (updatedPhotos.length === 0) {
-                // No photos left, will show empty state
-                setCurrentIndex(0);
-              } else if (currentIndex >= updatedPhotos.length) {
-                // Current index is beyond the new array length
-                setCurrentIndex(updatedPhotos.length - 1);
-              }
-              // If currentIndex < updatedPhotos.length, keep current index
-            } else {
+            try {
+              await feedService.deletePhoto(photoId);
+              setPhotos(prevPhotos => prevPhotos.filter(p => p.id !== photoId));
+            } catch (error) {
+              console.error('Error deleting photo:', error);
               Alert.alert('Error', 'Failed to delete photo');
             }
           },
         },
       ]
     );
-  }, [currentIndex, photos]);
+  };
 
-  const navigateToPhoto = useCallback((direction) => {
-    const newIndex = currentIndex + direction;
-    if (newIndex >= 0 && newIndex < photos.length) {
-      setCurrentIndex(newIndex);
-    }
-  }, [currentIndex, photos.length]);
+  const navigateToCamera = () => {
+    navigation.navigate('Camera');
+  };
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context) => {
-      context.startY = translateY.value;
-    },
-    onActive: (event, context) => {
-      translateY.value = context.startY + event.translationY;
-    },
-    onEnd: (event) => {
-      const shouldGoToNext = event.translationY < -SCREEN_HEIGHT * 0.2 && event.velocityY < -500;
-      const shouldGoToPrevious = event.translationY > SCREEN_HEIGHT * 0.2 && event.velocityY > 500;
-      
-      if (shouldGoToNext) {
-        // Change photo first, then animate
-        runOnJS(navigateToPhoto)(1);
-        translateY.value = withTiming(0, { duration: 150 });
-      } else if (shouldGoToPrevious) {
-        // Change photo first, then animate
-        runOnJS(navigateToPhoto)(-1);
-        translateY.value = withTiming(0, { duration: 150 });
-      } else {
-        translateY.value = withSpring(0);
-      }
-    },
-  });
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const previousPhotoStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translateY.value,
-      [0, SCREEN_HEIGHT],
-      [0, 1],
-      'clamp'
-    );
-    const scale = interpolate(
-      translateY.value,
-      [0, SCREEN_HEIGHT],
-      [0.8, 1],
-      'clamp'
-    );
-    return {
-      opacity,
-      transform: [{ scale }],
-    };
-  });
-
-  const nextPhotoStyle = useAnimatedStyle(() => {
-    const translateYNext = interpolate(
-      translateY.value,
-      [-SCREEN_HEIGHT, 0],
-      [0, SCREEN_HEIGHT],
-      'clamp'
-    );
-    return {
-      transform: [{ translateY: translateYNext }],
-    };
-  });
-
-  useEffect(() => {
-    loadPhotos();
-  }, [loadPhotos]);
-
-  // Auto-hide hints after 3 seconds
-  useEffect(() => {
-    if (photos.length > 1 && showHints) {
-      hintTimerRef.current = setTimeout(() => {
-        setShowHints(false);
-      }, 3000);
-    }
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
     
-    return () => {
-      if (hintTimerRef.current) {
-        clearTimeout(hintTimerRef.current);
-      }
-    };
-  }, [photos.length, showHints]);
+    if (diffDays > 0) {
+      return `${diffDays}d ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours}h ago`;
+    } else {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return diffMinutes < 1 ? 'now' : `${diffMinutes}m ago`;
+    }
+  };
 
-  const handleSingleTap = useCallback(() => {
-    setShowOverlay(prev => !prev);
-  }, []);
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index || 0);
+    }
+  }).current;
 
-  const handleDoubleTap = useCallback(() => {
-    // Double tap to like is handled in PhotoViewer
-  }, []);
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 50,
+  };
 
-  const handleRefresh = useCallback(async () => {
-    await loadPhotos();
-  }, [loadPhotos]);
-
-  const handleBack = () => {
-    navigation.navigate('Home');
+  const renderPhoto = ({ item, index }) => {
+    const isCurrentUser = item.userUsername === currentUser?.username;
+    
+    return (
+      <View style={styles.photoContainer}>
+        <PhotoViewer
+          photo={item}
+          isActive={index === currentIndex}
+          onDoubleTap={() => handleLike(item.id)}
+          onSingleTap={() => {}} // Could show/hide overlay in future
+          onLike={handleLike}
+          showOverlay={false}
+        />
+        
+        {/* Bottom Overlay with User Info */}
+        <View style={styles.bottomOverlay}>
+          <BlurView style={styles.blurView} intensity={80} tint="dark">
+            <View style={styles.overlayContent}>
+              <View style={styles.userInfoSection}>
+                <Text style={styles.userUsername}>{item.userUsername}</Text>
+                <Text style={styles.timestamp}>
+                  {formatTimestamp(item.timestamp)}
+                </Text>
+              </View>
+              
+              <View style={styles.actionsSection}>
+                <TouchableOpacity
+                  style={[styles.actionButton, item.liked && styles.likedButton]}
+                  onPress={() => handleLike(item.id)}
+                >
+                  <Text style={[styles.actionIcon, item.liked && styles.likedIcon]}>
+                    {item.liked ? '♥' : '♡'}
+                  </Text>
+                </TouchableOpacity>
+                
+                {isCurrentUser && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.deleteButton]}
+                    onPress={() => handleDelete(item.id)}
+                  >
+                    <Text style={styles.deleteIcon}>🗑</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </BlurView>
+        </View>
+      </View>
+    );
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, styles.centered]}>
+      <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Loading photos...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (photos.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, styles.centered]}>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No Photos Yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Start taking photos to see them here!
-          </Text>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Text style={styles.backButtonText}>Back to Home</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyTitle}>No Photos Yet</Text>
+        <Text style={styles.emptySubtitle}>
+          Be the first to share a moment!
+        </Text>
+        <TouchableOpacity style={styles.emptyButton} onPress={navigateToCamera}>
+          <Text style={styles.emptyButtonText}>Take Photo</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
-  const currentPhoto = photos[currentIndex];
-  const previousPhoto = currentIndex > 0 ? photos[currentIndex - 1] : null;
-  const nextPhoto = currentIndex < photos.length - 1 ? photos[currentIndex + 1] : null;
-
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.TREE_GREEN} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="black" />
       
-      {/* Background Photos for Smooth Transitions */}
-      {previousPhoto && (
-        <Animated.View style={[styles.photoContainer, styles.backgroundPhoto, previousPhotoStyle]}>
-          <PhotoViewer
-            photo={previousPhoto}
-            isActive={false}
-            onDoubleTap={handleDoubleTap}
-            onSingleTap={handleSingleTap}
-            onLike={handleLike}
-            showOverlay={false}
+      <FlatList
+        ref={flatListRef}
+        data={photos}
+        renderItem={renderPhoto}
+        keyExtractor={(item) => item.id}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        snapToInterval={SCREEN_HEIGHT}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.SKY_BLUE}
           />
-        </Animated.View>
-      )}
-      
-      {nextPhoto && (
-        <Animated.View style={[styles.photoContainer, styles.backgroundPhoto, nextPhotoStyle]}>
-          <PhotoViewer
-            photo={nextPhoto}
-            isActive={false}
-            onDoubleTap={handleDoubleTap}
-            onSingleTap={handleSingleTap}
-            onLike={handleLike}
-            showOverlay={false}
-          />
-        </Animated.View>
-      )}
-      
-      {/* Main Photo */}
-      <PanGestureHandler ref={gestureRef} onGestureEvent={gestureHandler}>
-        <Animated.View style={[styles.photoContainer, animatedStyle]}>
-          <PhotoViewer
-            photo={currentPhoto}
-            isActive={true}
-            onDoubleTap={handleDoubleTap}
-            onSingleTap={handleSingleTap}
-            onLike={handleLike}
-            showOverlay={showOverlay}
-          />
-        </Animated.View>
-      </PanGestureHandler>
-      
-      {/* Top Bar with Controls */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.topButton} onPress={handleBack}>
-          <Text style={styles.topButtonText}>✕</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.topButton} onPress={handleRefresh}>
-          <Text style={styles.topButtonText}>⟳</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Photo Counter */}
-      <View style={styles.photoCounter}>
-        <Text style={styles.counterText}>
-          {currentIndex + 1} / {photos.length}
-        </Text>
-      </View>
-      
-      {/* Overlay */}
-      <PhotoOverlay
-        photo={currentPhoto}
-        visible={showOverlay}
-        onLike={handleLike}
-        onDelete={handleDelete}
-        currentUserEmail={currentUser?.email}
-        onClose={() => setShowOverlay(false)}
+        }
+        getItemLayout={(data, index) => ({
+          length: SCREEN_HEIGHT,
+          offset: SCREEN_HEIGHT * index,
+          index,
+        })}
       />
       
-      {/* Navigation Hints */}
-      {photos.length > 1 && showHints && (
-        <View style={styles.navigationHints}>
-          {currentIndex < photos.length - 1 && (
-            <View style={[styles.hint, styles.hintUp]}>
-              <Text style={styles.hintText}>Swipe up for next</Text>
-            </View>
-          )}
-          {currentIndex > 0 && (
-            <View style={[styles.hint, styles.hintDown]}>
-              <Text style={styles.hintText}>Swipe down for previous</Text>
-            </View>
-          )}
-        </View>
-      )}
-    </GestureHandlerRootView>
+      {/* Floating Plus Button */}
+      <TouchableOpacity style={styles.addButton} onPress={navigateToCamera}>
+        <Text style={styles.addButtonText}>+</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.TREE_GREEN,
+    backgroundColor: 'black',
   },
-  centered: {
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  photoContainer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  backgroundPhoto: {
-    zIndex: 0,
+    backgroundColor: colors.TREE_GREEN,
   },
   loadingText: {
-    fontSize: 18,
     color: colors.PAPER_YELLOW,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '500',
   },
-  emptyState: {
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.TREE_GREEN,
     padding: spacing.xl,
   },
   emptyTitle: {
@@ -359,85 +278,106 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 16,
     color: colors.SKY_BLUE,
-    textAlign: 'center',
-    lineHeight: 22,
     marginBottom: spacing.xl,
+    textAlign: 'center',
   },
-  backButton: {
+  emptyButton: {
     backgroundColor: colors.SPIRIT_GREEN,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: 25,
   },
-  backButtonText: {
+  emptyButtonText: {
     color: colors.PAPER_YELLOW,
     fontSize: 16,
     fontWeight: 'bold',
   },
-  topBar: {
+  photoContainer: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    position: 'relative',
+  },
+  bottomOverlay: {
     position: 'absolute',
-    top: 50,
+    bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    zIndex: 10,
+    height: 120,
   },
-  topButton: {
+  blurView: {
+    flex: 1,
+  },
+  overlayContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingBottom: spacing.xl, // Extra padding for home indicator
+  },
+  userInfoSection: {
+    flex: 1,
+  },
+  userUsername: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.PAPER_YELLOW,
+    marginBottom: spacing.xs,
+  },
+  timestamp: {
+    fontSize: 14,
+    color: colors.SKY_BLUE,
+    opacity: 0.8,
+  },
+  actionsSection: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  actionButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  topButtonText: {
-    color: 'white',
+  likedButton: {
+    backgroundColor: colors.SKY_BLUE,
+  },
+  deleteButton: {
+    backgroundColor: 'rgba(255, 68, 68, 0.3)',
+  },
+  actionIcon: {
+    fontSize: 20,
+    color: colors.PAPER_YELLOW,
+  },
+  likedIcon: {
+    color: colors.TREE_GREEN,
+  },
+  deleteIcon: {
     fontSize: 18,
-    fontWeight: 'bold',
   },
-  photoCounter: {
+  addButton: {
     position: 'absolute',
-    top: 100,
+    bottom: 100,
     right: spacing.lg,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    zIndex: 10,
-  },
-  counterText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  navigationHints: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 5,
-    pointerEvents: 'none',
-  },
-  hint: {
-    position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.SPIRIT_GREEN,
+    justifyContent: 'center',
     alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
-  hintUp: {
-    top: '25%',
-  },
-  hintDown: {
-    bottom: '25%',
-  },
-  hintText: {
-    color: 'white',
-    fontSize: 12,
-    opacity: 0.8,
+  addButtonText: {
+    fontSize: 24,
+    color: colors.PAPER_YELLOW,
+    fontWeight: 'bold',
+    lineHeight: 24,
   },
 });

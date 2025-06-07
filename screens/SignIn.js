@@ -5,18 +5,18 @@ import { colors, spacing, borderRadius } from '../src/theme';
 import { authService } from '../src/services/auth';
 
 export default function SignInPage({ navigation }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
-    if (!email || !password) {
+    if (!username || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     setLoading(true);
-    const result = await authService.signIn(email, password);
+    const result = await authService.signIn(username, password);
     setLoading(false);
 
     if (!result.success) {
@@ -33,12 +33,11 @@ export default function SignInPage({ navigation }) {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder="Username"
           placeholderTextColor={colors.SKY_BLUE}
-          value={email}
-          onChangeText={setEmail}
+          value={username}
+          onChangeText={setUsername}
           autoCapitalize="none"
-          keyboardType="email-address"
         />
         <TextInput
           style={styles.input}
@@ -104,10 +103,5 @@ const styles = StyleSheet.create({
         color: colors.SKY_BLUE,
         fontSize: 16,
         textDecorationLine: 'underline',
-    },
-    alternativeSignIn: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
     },
 });

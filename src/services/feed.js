@@ -4,7 +4,7 @@ const PHOTOS_STORAGE_KEY = 'spotted_app_photos';
 
 // Abstract interface for feed data operations
 export const feedService = {
-  // Get all photos (currently from local storage, future: Firebase)
+  // Get all photos
   getAllPhotos: async () => {
     try {
       const photosData = await AsyncStorage.getItem(PHOTOS_STORAGE_KEY);
@@ -20,12 +20,12 @@ export const feedService = {
     }
   },
   
-  // Add new photo (currently local, future: Firebase)
+  // Add new photo
   addPhoto: async (photoData) => {
     try {
       const existingPhotos = await feedService.getAllPhotos();
       const newPhoto = {
-        id: Date.now().toString(), // Simple ID generation, Firebase will handle this
+        id: Date.now().toString(),
         ...photoData,
         timestamp: new Date().toISOString(),
         liked: false
@@ -40,7 +40,7 @@ export const feedService = {
     }
   },
   
-  // Delete photo (currently local, future: Firebase)  
+  // Delete photo
   deletePhoto: async (photoId) => {
     try {
       const existingPhotos = await feedService.getAllPhotos();
@@ -68,10 +68,9 @@ export const feedService = {
     }
   },
   
-  // Subscribe to photo updates (future: Firebase real-time)
+  // Subscribe to photo updates
   subscribeToPhotos: (callback) => {
-    // Placeholder for Firebase real-time listeners
-    // For now, return unsubscribe function
+    // Return unsubscribe function
     return () => {};
   }
 };

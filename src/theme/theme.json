@@ -4,11 +4,7 @@
     "SPIRIT_GREEN": "#276d37",
     "FALL_YELLOW": "#c6d89a",
     "SKY_BLUE": "#84c2e2",
-    "PAPER_YELLOW": "#d3efe8",
-    "dim1": "#B5D1CA",
-    "dim2": "#A1BDB6",
-    "dim3": "#8DA9A2",
-    "dim4": "#79958E"
+    "PAPER_YELLOW": "#d3efe8"
   },
   "spacing": {
     "xs": 4,

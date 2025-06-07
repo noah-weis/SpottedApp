@@ -5,23 +5,22 @@ import { colors, spacing, borderRadius } from '../src/theme';
 import { authService } from '../src/services/auth';
 
 export default function SignUpPage({ navigation }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
   // Validation states
-  const [emailError, setEmailError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   // Validation functions
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
+  const validateUsername = (username) => {
+    if (!username) {
       return '';
-    } else if (!emailRegex.test(email)) {
-      return 'Please enter a valid email address';
+    } else if (username.length < 3) {
+      return 'Username must be at least 3 characters';
     }
     return '';
   };
@@ -45,9 +44,9 @@ export default function SignUpPage({ navigation }) {
   };
 
   // Handle input changes with validation
-  const handleEmailChange = (text) => {
-    setEmail(text);
-    setEmailError(validateEmail(text));
+  const handleUsernameChange = (text) => {
+    setUsername(text);
+    setUsernameError(validateUsername(text));
   };
 
   const handlePasswordChange = (text) => {
@@ -66,10 +65,10 @@ export default function SignUpPage({ navigation }) {
 
   // Check if form is valid
   const isFormValid = () => {
-    return email && 
+    return username && 
            password && 
            confirmPassword && 
-           !emailError && 
+           !usernameError && 
            !passwordError && 
            !confirmPasswordError && 
            !loading;
@@ -77,26 +76,26 @@ export default function SignUpPage({ navigation }) {
 
   const handleSignUp = async () => {
     // Final validation check
-    const emailErr = validateEmail(email);
+    const usernameErr = validateUsername(username);
     const passwordErr = validatePassword(password);
     const confirmPasswordErr = validateConfirmPassword(confirmPassword);
     
-    setEmailError(emailErr);
+    setUsernameError(usernameErr);
     setPasswordError(passwordErr);
     setConfirmPasswordError(confirmPasswordErr);
 
-    if (!email || !password || !confirmPassword) {
+    if (!username || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
-    if (emailErr || passwordErr || confirmPasswordErr) {
+    if (usernameErr || passwordErr || confirmPasswordErr) {
       Alert.alert('Error', 'Please fix the errors above');
       return;
     }
 
     setLoading(true);
-    const result = await authService.signUp(email, password);
+    const result = await authService.signUp(username, password);
     setLoading(false);
 
     if (result.success) {
@@ -116,15 +115,14 @@ export default function SignUpPage({ navigation }) {
         <Text style={styles.title}>Create Account</Text>
         
         <TextInput
-          style={[styles.input, emailError ? styles.inputError : null]}
-          placeholder="Email"
+          style={[styles.input, usernameError ? styles.inputError : null]}
+          placeholder="Username"
           placeholderTextColor={colors.SKY_BLUE}
-          value={email}
-          onChangeText={handleEmailChange}
+          value={username}
+          onChangeText={handleUsernameChange}
           autoCapitalize="none"
-          keyboardType="email-address"
         />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        {usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
         
         <TextInput
           style={[styles.input, passwordError ? styles.inputError : null]}

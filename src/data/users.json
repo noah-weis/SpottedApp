@@ -2,14 +2,14 @@
   "users": [
     {
       "id": "1",
-      "email": "test@example.com",
-      "password": "password123",
+      "username": "user",
+      "password": "123456",
       "createdAt": "2025-01-01T00:00:00.000Z"
     },
     {
       "id": "2", 
-      "email": "admin@example.com",
-      "password": "admin123",
+      "username": "admin",
+      "password": "123456",
       "createdAt": "2025-01-01T00:00:00.000Z"
     }
   ]
